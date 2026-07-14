@@ -1,0 +1,10 @@
+# Security / Credentials
+.env
+.env.local
+.env.*.local
+
+# Dependency directories
+node_modules/
+
+# Local Supabase cache
+supabase/.temp/
