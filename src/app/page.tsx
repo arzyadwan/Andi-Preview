@@ -9,6 +9,63 @@ interface FileQueueItem {
   previewUrl: string;
 }
 
+// Client-side image compression helper to bypass payload size limits
+const compressImage = (file: File): Promise<File> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+
+        const MAX_WIDTH = 1600;
+        const MAX_HEIGHT = 1600;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                resolve(file);
+              }
+            },
+            'image/jpeg',
+            0.75
+          );
+        } else {
+          resolve(file);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
 export default function Home() {
   const [fileQueue, setFileQueue] = useState<FileQueueItem[]>([]);
   const [expiresIn, setExpiresIn] = useState<string>('60'); // default 1 hour
@@ -104,13 +161,18 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
 
-    const formData = new FormData();
-    fileQueue.forEach((item) => {
-      formData.append('file', item.file);
-    });
-    formData.append('expiresInMinutes', expiresIn);
-
     try {
+      const formData = new FormData();
+      
+      // Compress all images in parallel before appending to form data
+      const compressionPromises = fileQueue.map(item => compressImage(item.file));
+      const compressedFiles = await Promise.all(compressionPromises);
+      
+      compressedFiles.forEach((file) => {
+        formData.append('file', file);
+      });
+      formData.append('expiresInMinutes', expiresIn);
+
       const response = await fetch('/api/images', {
         method: 'POST',
         body: formData,
@@ -153,10 +215,8 @@ export default function Home() {
 
       {/* Header */}
       <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between border-b border-slate-900 relative z-10">
-        <div className="flex items-center space-x-2">
-          <div className="bg-gradient-to-tr from-purple-600 to-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-500/20">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
+        <div className="flex items-center space-x-3">
+          <img src="/logo.png" alt="Andi Preview Logo" className="w-10 h-10 object-contain rounded-xl" />
           <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
             Andi Preview
           </span>

@@ -18,6 +18,7 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0); // in seconds
+  const [animationClass, setAnimationClass] = useState<string>('animate-slide-in-right');
 
   // Touch gesture states for mobile swipe support
   const touchStartX = useRef<number | null>(null);
@@ -70,10 +71,12 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
   }, [timeLeft]);
 
   const handlePrev = useCallback(() => {
+    setAnimationClass('animate-slide-in-left');
     setActiveIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
   }, [images.length]);
 
   const handleNext = useCallback(() => {
+    setAnimationClass('animate-slide-in-right');
     setActiveIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   }, [images.length]);
 
@@ -153,10 +156,8 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-red-950/10 rounded-full blur-[120px] pointer-events-none" />
         
         <header className="w-full max-w-7xl mx-auto px-6 py-6 border-b border-slate-900/50">
-          <div className="flex items-center space-x-2">
-            <div className="bg-gradient-to-tr from-purple-600 to-indigo-600 p-2 rounded-xl">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
+          <div className="flex items-center space-x-3">
+            <img src="/logo.png" alt="Andi Preview Logo" className="w-10 h-10 object-contain rounded-xl" />
             <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
               Andi Preview
             </span>
@@ -197,10 +198,8 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
 
       {/* Header */}
       <header className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between border-b border-slate-900/50 relative z-20">
-        <div className="flex items-center space-x-2">
-          <div className="bg-gradient-to-tr from-purple-600 to-indigo-600 p-1.5 rounded-lg sm:p-2 sm:rounded-xl">
-            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-          </div>
+        <div className="flex items-center space-x-3">
+          <img src="/logo.png" alt="Andi Preview Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain rounded-lg sm:rounded-xl" />
           <span className="font-extrabold text-md sm:text-lg tracking-tight bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent hidden xs:inline">
             Andi Preview
           </span>
@@ -232,12 +231,12 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
           </div>
 
           {/* Interactive Workspace - Dynamically wraps the image with its native ratio */}
-          <div className="relative flex items-center justify-center w-full max-h-[72vh]">
+          <div className="relative flex items-center justify-center w-full max-h-[72vh] overflow-hidden">
             <div
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
-              className="relative max-w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-950/40 border border-slate-850 shadow-2xl flex items-center justify-center group"
+              className="relative max-w-full flex items-center justify-center group overflow-hidden"
             >
               
               {/* Repeated background watermark pattern */}
@@ -259,12 +258,12 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
                 </button>
               )}
 
-              {/* Main Image Renderer */}
+              {/* Main Image Renderer with dynamic slide animation */}
               <img
-                key={activeImage.id}
+                key={`${activeImage.id}-${animationClass}`}
                 src={`/api/images/file/${activeImage.id}`}
                 alt={activeImage.name}
-                className="max-w-full max-h-[70vh] w-auto h-auto object-contain relative z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300 select-none rounded-2xl sm:rounded-3xl"
+                className={`max-w-full max-h-[70vh] w-auto h-auto object-contain relative z-10 select-none ${animationClass}`}
                 onDragStart={(e) => e.preventDefault()}
                 onContextMenu={(e) => e.preventDefault()}
               />
@@ -277,13 +276,6 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
-              )}
-
-              {/* Mobile swipe helper indicator */}
-              {images.length > 1 && (
-                <div className="md:hidden absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-full border border-slate-800 text-[9px] text-slate-400 z-20 pointer-events-none">
-                  Geser (Swipe) untuk melihat gambar lain
-                </div>
               )}
             </div>
           </div>
@@ -315,6 +307,24 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
 
         </div>
       </div>
+
+      {/* CSS Animation Keyframes for dynamic slide sliding */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes slideInFromRight {
+          from { transform: translateX(80px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideInFromLeft {
+          from { transform: translateX(-80px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-right {
+          animation: slideInFromRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-slide-in-left {
+          animation: slideInFromLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}} />
 
       {/* Footer */}
       <footer className="w-full text-center py-4 text-[10px] sm:text-xs text-slate-600 border-t border-slate-900/50 bg-slate-950">
