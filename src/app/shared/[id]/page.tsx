@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Clock, ShieldAlert, Sparkles, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 
 interface ImageMeta {
@@ -18,6 +18,10 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0); // in seconds
+
+  // Touch gesture states for mobile swipe support
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
 
   useEffect(() => {
     async function fetchMetadata() {
@@ -72,6 +76,33 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
   const handleNext = useCallback(() => {
     setActiveIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   }, [images.length]);
+
+  // Handle mobile touch gestures
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null || touchEndX.current === null) return;
+    
+    const distance = touchStartX.current - touchEndX.current;
+    const isLeftSwipe = distance > 50; // Swiped left -> Next image
+    const isRightSwipe = distance < -50; // Swiped right -> Previous image
+
+    if (isLeftSwipe) {
+      handleNext();
+    } else if (isRightSwipe) {
+      handlePrev();
+    }
+
+    // Reset touch variables
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
 
   // Handle keyboard arrow keys
   useEffect(() => {
@@ -165,58 +196,63 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
       <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-indigo-900/10 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Header */}
-      <header className="w-full max-w-7xl mx-auto px-6 py-4 flex items-center justify-between border-b border-slate-900/50 relative z-20">
+      <header className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between border-b border-slate-900/50 relative z-20">
         <div className="flex items-center space-x-2">
-          <div className="bg-gradient-to-tr from-purple-600 to-indigo-600 p-2 rounded-xl">
-            <Sparkles className="w-6 h-6 text-white" />
+          <div className="bg-gradient-to-tr from-purple-600 to-indigo-600 p-1.5 rounded-lg sm:p-2 sm:rounded-xl">
+            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
-          <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent hidden sm:inline">
+          <span className="font-extrabold text-md sm:text-lg tracking-tight bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent hidden xs:inline">
             Andi Preview
           </span>
-          <span className="text-xs bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-slate-300 font-semibold font-mono">
+          <span className="text-[10px] sm:text-xs bg-slate-900 px-2.5 py-1 rounded-md border border-slate-800 text-slate-300 font-semibold font-mono">
             {activeIndex + 1} / {images.length}
           </span>
         </div>
 
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 text-xs font-semibold text-rose-400 bg-rose-950/40 px-4 py-2.5 rounded-full border border-rose-900/50 animate-pulse">
-            <Clock className="w-4 h-4" />
+          <div className="flex items-center space-x-1.5 text-[10px] sm:text-xs font-semibold text-rose-400 bg-rose-950/40 px-3 py-2 rounded-full border border-rose-900/50 animate-pulse">
+            <Clock className="w-3.5 h-3.5" />
             <span>Hancur Dalam: {formatTime(timeLeft)}</span>
           </div>
         </div>
       </header>
 
       {/* Main Preview Viewport */}
-      <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
+      <div className="flex-1 flex flex-col items-center justify-center p-3 sm:p-6 relative z-10">
         <div className="w-full max-w-5xl flex flex-col items-center">
           
           {/* File Name Header */}
-          <div className="w-full text-center mb-3">
-            <span className="text-xs text-slate-500 uppercase tracking-widest block font-bold mb-1">
-              File Name
+          <div className="w-full text-center mb-2 sm:mb-3">
+            <span className="text-[10px] text-slate-500 uppercase tracking-widest block font-bold">
+              Nama File
             </span>
-            <h2 className="text-sm font-semibold text-slate-300 truncate max-w-xl mx-auto">
+            <h2 className="text-xs sm:text-sm font-semibold text-slate-300 truncate max-w-xs sm:max-w-xl mx-auto">
               {activeImage.name}
             </h2>
           </div>
 
           {/* Interactive Workspace */}
-          <div className="relative w-full aspect-video rounded-3xl overflow-hidden bg-slate-950 border border-slate-800/80 flex items-center justify-center p-4 shadow-2xl group min-h-[50vh] max-h-[60vh]">
+          <div
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            className="relative w-full aspect-[4/3] sm:aspect-video rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-950 border border-slate-800/80 flex items-center justify-center p-3 shadow-2xl group min-h-[40vh] max-h-[50vh] sm:max-h-[60vh]"
+          >
             
             {/* Repeated background watermark pattern */}
-            <div className="absolute inset-0 opacity-[0.03] select-none pointer-events-none flex flex-wrap gap-x-14 gap-y-16 justify-center items-center overflow-hidden rotate-[-12deg] scale-110">
+            <div className="absolute inset-0 opacity-[0.03] select-none pointer-events-none flex flex-wrap gap-x-12 gap-y-14 justify-center items-center overflow-hidden rotate-[-12deg] scale-110">
               {Array.from({ length: 64 }).map((_, i) => (
-                <span key={i} className="text-lg font-extrabold tracking-widest uppercase font-mono text-white">
+                <span key={i} className="text-md sm:text-lg font-extrabold tracking-widest uppercase font-mono text-white">
                   ANDI PREVIEW
                 </span>
               ))}
             </div>
 
-            {/* Left Control Navigation (if more than 1 image) */}
+            {/* Left Control Navigation (Desktop or hidden on Touch devices) */}
             {images.length > 1 && (
               <button
                 onClick={handlePrev}
-                className="absolute left-4 p-3 bg-slate-900/75 hover:bg-slate-800 border border-slate-800/50 hover:border-slate-700/80 text-slate-200 hover:text-white rounded-full transition-all duration-200 z-20 shadow-xl opacity-80 hover:opacity-100"
+                className="hidden md:flex absolute left-4 p-3 bg-slate-900/75 hover:bg-slate-800 border border-slate-800/50 hover:border-slate-700/80 text-slate-200 hover:text-white rounded-full transition-all duration-200 z-20 shadow-xl opacity-80 hover:opacity-100"
               >
                 <ChevronLeft className="w-6 h-6" />
               </button>
@@ -227,34 +263,41 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
               key={activeImage.id}
               src={`/api/images/file/${activeImage.id}`}
               alt={activeImage.name}
-              className="max-w-full max-h-full object-contain rounded-xl relative z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300 select-none"
+              className="max-w-full max-h-full object-contain rounded-lg sm:rounded-xl relative z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300 select-none"
               onDragStart={(e) => e.preventDefault()}
               onContextMenu={(e) => e.preventDefault()}
             />
 
-            {/* Right Control Navigation (if more than 1 image) */}
+            {/* Right Control Navigation */}
             {images.length > 1 && (
               <button
                 onClick={handleNext}
-                className="absolute right-4 p-3 bg-slate-900/75 hover:bg-slate-800 border border-slate-800/50 hover:border-slate-700/80 text-slate-200 hover:text-white rounded-full transition-all duration-200 z-20 shadow-xl opacity-80 hover:opacity-100"
+                className="hidden md:flex absolute right-4 p-3 bg-slate-900/75 hover:bg-slate-800 border border-slate-800/50 hover:border-slate-700/80 text-slate-200 hover:text-white rounded-full transition-all duration-200 z-20 shadow-xl opacity-80 hover:opacity-100"
               >
                 <ChevronRight className="w-6 h-6" />
               </button>
             )}
+
+            {/* Mobile swipe helper indicator (Only visible on small touch screens for 1.5s) */}
+            {images.length > 1 && (
+              <div className="md:hidden absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-full border border-slate-800 text-[9px] text-slate-400 z-20 pointer-events-none">
+                Geser (Swipe) untuk melihat gambar lain
+              </div>
+            )}
           </div>
 
-          {/* Bottom Thumbnails Strip (if more than 1 image) */}
+          {/* Bottom Thumbnails Strip (Scrollable and smaller on mobile) */}
           {images.length > 1 && (
-            <div className="w-full max-w-2xl mt-6 px-4">
-              <div className="flex justify-center space-x-3 overflow-x-auto py-2 custom-scrollbar">
+            <div className="w-full max-w-2xl mt-4 px-2 sm:px-4">
+              <div className="flex justify-center space-x-2 sm:space-x-3 overflow-x-auto py-1 sm:py-2 custom-scrollbar snap-x">
                 {images.map((img, index) => (
                   <button
                     key={img.id}
                     onClick={() => setActiveIndex(index)}
-                    className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 transition-all duration-200 border-2 ${
+                    className={`relative w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl overflow-hidden flex-shrink-0 transition-all duration-200 border-2 snap-center ${
                       activeIndex === index
-                        ? 'border-purple-500 scale-105 shadow-lg shadow-purple-500/10'
-                        : 'border-slate-900 hover:border-slate-800 opacity-60 hover:opacity-100'
+                        ? 'border-purple-500 scale-105 shadow-md shadow-purple-500/10'
+                        : 'border-slate-900 hover:border-slate-800 opacity-50 hover:opacity-100'
                     }`}
                   >
                     <img
@@ -272,7 +315,7 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
       </div>
 
       {/* Footer */}
-      <footer className="w-full text-center py-4 text-xs text-slate-600 border-t border-slate-900/50 bg-slate-950">
+      <footer className="w-full text-center py-4 text-[10px] sm:text-xs text-slate-600 border-t border-slate-900/50 bg-slate-950">
         © 2026 Andi Preview. All Files Are Encrypted and Auto-Destroyed.
       </footer>
     </main>
