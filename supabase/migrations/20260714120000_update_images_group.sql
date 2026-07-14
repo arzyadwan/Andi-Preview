@@ -14,8 +14,3 @@ CREATE TABLE public.images (
 
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.images ENABLE ROW LEVEL SECURITY;
-
--- Insert storage bucket for images
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('ephemeral-images', 'ephemeral-images', false)
-ON CONFLICT (id) DO NOTHING;
