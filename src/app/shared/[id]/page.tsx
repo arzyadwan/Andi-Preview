@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Clock, ShieldAlert, Sparkles, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Clock, ShieldAlert, Sparkles, ChevronLeft, ChevronRight, Eye, X } from 'lucide-react';
 
 interface ImageMeta {
   id: string;
@@ -19,6 +19,7 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0); // in seconds
   const [animationClass, setAnimationClass] = useState<string>('animate-slide-in-right');
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   // Touch gesture states for mobile swipe support
   const touchStartX = useRef<number | null>(null);
@@ -107,9 +108,12 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
     touchEndX.current = null;
   };
 
-  // Handle keyboard arrow keys
+  // Handle keyboard arrow keys & escape key for fullscreen
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsFullscreen(false);
+      }
       if (images.length <= 1) return;
       if (e.key === 'ArrowLeft') {
         handlePrev();
@@ -263,9 +267,10 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
                 key={`${activeImage.id}-${animationClass}`}
                 src={`/api/images/file/${activeImage.id}`}
                 alt={activeImage.name}
-                className={`max-w-full max-h-[70vh] w-auto h-auto object-contain relative z-10 select-none ${animationClass}`}
+                className={`max-w-full max-h-[70vh] w-auto h-auto object-contain relative z-10 select-none cursor-zoom-in ${animationClass}`}
                 onDragStart={(e) => e.preventDefault()}
                 onContextMenu={(e) => e.preventDefault()}
+                onClick={() => setIsFullscreen(true)}
               />
 
               {/* Right Control Navigation (Overlay on hover) */}
@@ -307,6 +312,30 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
 
         </div>
       </div>
+
+      {/* Fullscreen Lightbox Overlay */}
+      {isFullscreen && (
+        <div 
+          onClick={() => setIsFullscreen(false)}
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center cursor-zoom-out animate-in fade-in duration-200"
+        >
+          <button 
+            onClick={() => setIsFullscreen(false)}
+            className="absolute top-4 right-4 p-3 bg-slate-900/80 hover:bg-slate-800 border border-slate-800/80 text-slate-300 hover:text-white rounded-full transition-all duration-200 z-55 shadow-2xl cursor-pointer"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          
+          <img
+            src={`/api/images/file/${activeImage.id}`}
+            alt={activeImage.name}
+            className="max-w-[95vw] max-h-[95vh] object-contain select-none shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            onDragStart={(e) => e.preventDefault()}
+            onContextMenu={(e) => e.preventDefault()}
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking the image itself
+          />
+        </div>
+      )}
 
       {/* CSS Animation Keyframes for dynamic slide sliding */}
       <style dangerouslySetInnerHTML={{ __html: `
