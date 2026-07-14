@@ -231,59 +231,61 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
             </h2>
           </div>
 
-          {/* Interactive Workspace */}
-          <div
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            className="relative w-full aspect-[4/3] sm:aspect-video rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-950 border border-slate-800/80 flex items-center justify-center p-3 shadow-2xl group min-h-[40vh] max-h-[50vh] sm:max-h-[60vh]"
-          >
-            
-            {/* Repeated background watermark pattern */}
-            <div className="absolute inset-0 opacity-[0.03] select-none pointer-events-none flex flex-wrap gap-x-12 gap-y-14 justify-center items-center overflow-hidden rotate-[-12deg] scale-110">
-              {Array.from({ length: 64 }).map((_, i) => (
-                <span key={i} className="text-md sm:text-lg font-extrabold tracking-widest uppercase font-mono text-white">
-                  ANDI PREVIEW
-                </span>
-              ))}
-            </div>
-
-            {/* Left Control Navigation (Desktop or hidden on Touch devices) */}
-            {images.length > 1 && (
-              <button
-                onClick={handlePrev}
-                className="hidden md:flex absolute left-4 p-3 bg-slate-900/75 hover:bg-slate-800 border border-slate-800/50 hover:border-slate-700/80 text-slate-200 hover:text-white rounded-full transition-all duration-200 z-20 shadow-xl opacity-80 hover:opacity-100"
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-            )}
-
-            {/* Main Image Renderer */}
-            <img
-              key={activeImage.id}
-              src={`/api/images/file/${activeImage.id}`}
-              alt={activeImage.name}
-              className="max-w-full max-h-full object-contain rounded-lg sm:rounded-xl relative z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300 select-none"
-              onDragStart={(e) => e.preventDefault()}
-              onContextMenu={(e) => e.preventDefault()}
-            />
-
-            {/* Right Control Navigation */}
-            {images.length > 1 && (
-              <button
-                onClick={handleNext}
-                className="hidden md:flex absolute right-4 p-3 bg-slate-900/75 hover:bg-slate-800 border border-slate-800/50 hover:border-slate-700/80 text-slate-200 hover:text-white rounded-full transition-all duration-200 z-20 shadow-xl opacity-80 hover:opacity-100"
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            )}
-
-            {/* Mobile swipe helper indicator (Only visible on small touch screens for 1.5s) */}
-            {images.length > 1 && (
-              <div className="md:hidden absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-full border border-slate-800 text-[9px] text-slate-400 z-20 pointer-events-none">
-                Geser (Swipe) untuk melihat gambar lain
+          {/* Interactive Workspace - Dynamically wraps the image with its native ratio */}
+          <div className="relative flex items-center justify-center w-full max-h-[72vh]">
+            <div
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              className="relative max-w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-950/40 border border-slate-850 shadow-2xl flex items-center justify-center group"
+            >
+              
+              {/* Repeated background watermark pattern */}
+              <div className="absolute inset-0 opacity-[0.03] select-none pointer-events-none flex flex-wrap gap-x-10 gap-y-12 justify-center items-center overflow-hidden rotate-[-12deg] scale-110">
+                {Array.from({ length: 64 }).map((_, i) => (
+                  <span key={i} className="text-xs sm:text-sm font-extrabold tracking-widest uppercase font-mono text-white">
+                    ANDI PREVIEW
+                  </span>
+                ))}
               </div>
-            )}
+
+              {/* Left Control Navigation (Overlay on hover) */}
+              {images.length > 1 && (
+                <button
+                  onClick={handlePrev}
+                  className="hidden md:flex absolute left-4 p-3 bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 text-slate-200 hover:text-white rounded-full transition-all duration-200 z-20 shadow-xl opacity-0 group-hover:opacity-100"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+              )}
+
+              {/* Main Image Renderer */}
+              <img
+                key={activeImage.id}
+                src={`/api/images/file/${activeImage.id}`}
+                alt={activeImage.name}
+                className="max-w-full max-h-[70vh] w-auto h-auto object-contain relative z-10 shadow-2xl animate-in fade-in zoom-in-95 duration-300 select-none rounded-2xl sm:rounded-3xl"
+                onDragStart={(e) => e.preventDefault()}
+                onContextMenu={(e) => e.preventDefault()}
+              />
+
+              {/* Right Control Navigation (Overlay on hover) */}
+              {images.length > 1 && (
+                <button
+                  onClick={handleNext}
+                  className="hidden md:flex absolute right-4 p-3 bg-slate-950/80 hover:bg-slate-900 border border-slate-800/80 text-slate-200 hover:text-white rounded-full transition-all duration-200 z-20 shadow-xl opacity-0 group-hover:opacity-100"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              )}
+
+              {/* Mobile swipe helper indicator */}
+              {images.length > 1 && (
+                <div className="md:hidden absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-full border border-slate-800 text-[9px] text-slate-400 z-20 pointer-events-none">
+                  Geser (Swipe) untuk melihat gambar lain
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Bottom Thumbnails Strip (Scrollable and smaller on mobile) */}
